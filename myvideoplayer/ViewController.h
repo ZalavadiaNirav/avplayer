@@ -19,16 +19,16 @@
     BOOL btnState;
     NSMutableArray *timeRange;
     NSMutableDictionary *timeDict;
-    int currentSecond;
+    int currentSecond,maxVal;
     UITextField * namefield;
     NSString *purposeStr;
     UIAlertController *alertController;
+    BOOL pass,status,isInsert;
 }
 
 -(IBAction)StartMarking:(id)sender;
--(void)verifyPart;
 -(void)popMsg;
-
+-(BOOL)verifyPart: (void (^)(void))completionBlock;
 
 @property (weak, nonatomic) IBOutlet UITableView *marketTbl;
 @property (nonatomic,retain)IBOutlet UIButton *startBtn;

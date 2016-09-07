@@ -14,6 +14,8 @@
 
 @implementation ViewController
 
+#define BETWEEN(value, min, max) (value < max && value > min)
+
 @synthesize videoPlayer;
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -54,11 +56,311 @@
     
 }
 
+-(BOOL)verifyPart :(void(^)(void))completionBlock
+{
+    int min = 0,max=0,i;
+    status=false;
+    currentSecond=CMTimeGetSeconds(videoPlayer.currentItem.currentTime);
+    if([timeRange count]!=0)
+    {
+        for (int i=0; i<[timeRange count]; i++)
+        {
+            int tempval1=[[[timeRange objectAtIndex:i] objectForKey:@"start"] intValue];
+            int tempval2=[[[timeRange objectAtIndex:i] objectForKey:@"stop"] intValue];
+            if(min==0)
+                min=tempval1;
+            if (max==0)
+                max=tempval2;
+            if(min<tempval1)
+                min=tempval1;
+            if(max<tempval2)
+                max=tempval2;
+        }
+        
+        for(i=0;i<[timeRange count];i++)
+        {
+            int tempval1=[[[timeRange objectAtIndex:i] objectForKey:@"start"] intValue];
+            int tempval2=[[[timeRange objectAtIndex:i] objectForKey:@"stop"] intValue];
+            
+            
+            if((currentSecond != tempval1 ) && (currentSecond != tempval2)) //equal
+            {
+                if((tempval1<currentSecond) &&(currentSecond <tempval2)) //check range
+                {
+                    NSLog(@"is in range error 1");
+                    status=false;
+                    break;
+                }
+                else
+                {
+                    if(currentSecond>min)
+                    {
+                        NSLog(@"2");
+                        if(currentSecond>max)
+                        {
+                            NSLog(@"insert3 ");
+                            status=true;
+                            
+                        }
+                        else
+                        {
+                            status=true;
+                            NSLog(@"insert 4");
+                        }
+                    }
+                    else if(currentSecond<min)
+                    {
+                        status=true;
+                        NSLog(@"insert 5");
+                        
+                    }
+                }
+            }
+            else
+            {
+                NSLog(@"5 error same value");
+                status=false;
+                break;
+            }
+        }
+    }
+    else
+    {
+        //first time insertion
+        if(btnState &&[timeRange count]==0)
+        {
+            //first time insertion only
+            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+            
+            btnState=false;
+            [_startBtn setTitle:@"Stop Marking" forState:UIControlStateNormal];
+        }
+        else
+        {
+            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
+            [self popMsg];
+        }
+    }
+    
+    NSLog(@"result %d cur %d",status,currentSecond);
+    return status;
+}
+
+
+
 -(IBAction)StartMarking:(id)sender
 {
-//    NSLog(@"current time %f", CMTimeGetSeconds(videoPlayer.currentItem.currentTime));
+    int min = -99,max=-99,i;
+    status=false;
     currentSecond=CMTimeGetSeconds(videoPlayer.currentItem.currentTime);
+    if([timeRange count]!=0)
+    {
+        for (int i=0; i<[timeRange count]; i++)
+        {
+            int tempval1=[[[timeRange objectAtIndex:i] objectForKey:@"start"] intValue];
+            int tempval2=[[[timeRange objectAtIndex:i] objectForKey:@"stop"] intValue];
+            if(min==-99)
+                min=tempval1;
+            if (max==-99)
+                max=tempval2;
+            if(min<tempval1)
+                min=tempval1;
+            if(max<tempval2)
+                max=tempval2;
+        }
+        
+        for(i=0;i<[timeRange count];i++)
+        {
+            int tempval1=[[[timeRange objectAtIndex:i] objectForKey:@"start"] intValue];
+            int tempval2=[[[timeRange objectAtIndex:i] objectForKey:@"stop"] intValue];
+            
+            
+            if((currentSecond != tempval1 ) && (currentSecond != tempval2)) //equal
+            {
+                if((tempval1<currentSecond) &&(currentSecond <tempval2)) //check range
+                {
+                    NSLog(@"is in range error 1");
+                    status=false;
+                    
+                    UIAlertController *msg=[UIAlertController alertControllerWithTitle:@"Marking Failed" message:@"You have already marked in this timeline" preferredStyle:UIAlertControllerStyleAlert];
+                    [self presentViewController:msg animated:YES completion:nil];
+                    
+                    UIAlertAction *ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
+                                                               handler:^(UIAlertAction * action){
+                                                                   
+                                                                   [msg dismissViewControllerAnimated:YES completion:nil];
+                                                                   [videoPlayer play];
+                                                                   
+                                                               }];
+                    [msg addAction:ok];
+                    //                NSLog(@"fail");
+                    btnState=true;
+                    [_startBtn setTitle:@"Start Marking" forState:UIControlStateNormal];
+                    [videoPlayer pause];
+
+                    break;
+                }
+                else
+                {
+                    if(currentSecond>min)
+                    {
+                        NSLog(@"2");
+                        if(currentSecond>max)
+                        {
+                            int previousStart=[[timeDict objectForKey:@"start"] intValue];
+
+                            if((previousStart<max) && (btnState==false))
+                            {
+                                status=false;
+                                NSLog(@"Error val is in range");
+                                UIAlertController *msg=[UIAlertController alertControllerWithTitle:@"Marking Failed" message:@"You have already marked in this timeline" preferredStyle:UIAlertControllerStyleAlert];
+                                [self presentViewController:msg animated:YES completion:nil];
+                                
+                                UIAlertAction *ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
+                                                                           handler:^(UIAlertAction * action){
+                                                                               
+                                                                               [msg dismissViewControllerAnimated:YES completion:nil];
+                                                                               [videoPlayer play];
+                                                                               
+                                                                           }];
+                                [msg addAction:ok];
+                                //                NSLog(@"fail");
+                                btnState=true;
+                                [_startBtn setTitle:@"Start Marking" forState:UIControlStateNormal];
+                                [videoPlayer pause];
+
+                            }
+                            else
+                            {
+                                NSLog(@"insert3 ");
+                                status=true;
+                            }
+                            
+                        }
+                        else
+                        {
+                            status=true;
+                            NSLog(@"insert 4");
+                        }
+                    }
+                    else if(currentSecond<min)
+                    {
+                        status=true;
+                        NSLog(@"insert 5");
+                        
+                    }
+                }
+            }
+            else
+            {
+                NSLog(@"5 error same value");
+                status=false;
+                
+                UIAlertController *msg=[UIAlertController alertControllerWithTitle:@"Marking Failed" message:@"You have already marked in this timeline" preferredStyle:UIAlertControllerStyleAlert];
+                [self presentViewController:msg animated:YES completion:nil];
+                
+                UIAlertAction *ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
+                                                           handler:^(UIAlertAction * action){
+                                                               
+                                                               [msg dismissViewControllerAnimated:YES completion:nil];
+                                                               [videoPlayer play];
+                                                               
+                                                           }];
+                [msg addAction:ok];
+                //                NSLog(@"fail");
+                btnState=true;
+                [_startBtn setTitle:@"Start Marking" forState:UIControlStateNormal];
+                [videoPlayer pause];
+
+                break;
+            }
+        }
+    }
+    else
+    {
+        //first time insertion
+        if(btnState &&[timeRange count]==0)
+        {
+            //first time insertion only
+            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+            
+            btnState=false;
+            [_startBtn setTitle:@"Stop Marking" forState:UIControlStateNormal];
+        }
+        else
+        {
+            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
+            [self popMsg];
+        }
+    }
     
+    NSLog(@"result %d cur %d",status,currentSecond);
+    
+    
+    if(status==true)
+    {
+        if(btnState)
+        {
+            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+            
+            btnState=false;
+            [_startBtn setTitle:@"Stop Marking" forState:UIControlStateNormal];
+            
+        }
+        else
+        {
+            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
+            [self popMsg];
+        }
+    }
+    else
+    {
+        /*
+        if(btnState==false)
+        {
+            btnState=true;
+            [_startBtn setTitle:@"Start Marking" forState:UIControlStateNormal];
+            
+        }*/
+    }
+    
+    
+/*
+     isInsert=[self verifyPart:^{
+         NSLog(@"in block");
+        if(status==true)
+        {
+            if(btnState)
+            {
+                [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+                
+                btnState=false;
+                [_startBtn setTitle:@"Stop Marking" forState:UIControlStateNormal];
+                
+            }
+            else
+            {
+                [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
+                [self popMsg];
+            }
+        }
+        else
+        {
+            
+            if(btnState==false)
+            {
+                btnState=true;
+                [_startBtn setTitle:@"Start Marking" forState:UIControlStateNormal];
+                
+            }
+        }
+
+    
+    }];
+*/
+    //    NSLog(@"current time %f", CMTimeGetSeconds(videoPlayer.currentItem.currentTime));
+//    currentSecond=CMTimeGetSeconds(videoPlayer.currentItem.currentTime);
+  /*
     if(btnState)
     {
         //already started state
@@ -70,16 +372,117 @@
     }
     else
     {
+   
         //stop state
         if([timeRange count]>0)
-            [self verifyPart];
+        {
+            for (int i=0; i<[timeRange count]; i++)
+            {
+                
+                pass = false;
+
+                NSString *tempstart=[NSString stringWithFormat:@"%@",[[timeRange objectAtIndex:i] objectForKey:@"start"]];
+                int tempval1=[tempstart intValue];
+                NSString *tempstop=[NSString stringWithFormat:@"%@",[[timeRange objectAtIndex:i] objectForKey:@"stop"]];
+                int tempval2=[tempstop intValue];
+                if (tempval2>maxVal)
+                    maxVal=tempval2;
+                
+                
+                if((!BETWEEN(currentSecond,tempval1,tempval2)) && ((currentSecond!=tempval1)||(currentSecond!=tempval2)))
+                {
+                    if((btnState==false) && ((tempval1<currentSecond)&&(tempval2<currentSecond)))
+                    {
+                        NSLog(@"prob fal");
+                        if((maxVal<currentSecond) &&(tempval2>=maxVal) )
+                        {
+                            pass=true;
+                            
+                        }
+                        else
+                        {
+                        //check for stop time not fall in any time range 21-35 e.g.36(newstop)
+                            NSLog(@"faild Range1 current %d val1 %d val2 %d",currentSecond,tempval1,tempval2);
+                            pass=false;
+                            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+                            btnState=false;
+                            tempval1=0;
+                            tempval2=0;
+                            
+                        }
+                    }
+                    else
+                    {
+                        NSLog(@"pass");
+                        pass=true;
+                        
+                    }
+                }
+                else
+                {
+                    NSLog(@"fail current %d val1 %d val2 %d",currentSecond,tempval1,tempval2);
+                    
+                    pass=false;
+                    [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+                    btnState=false;
+                    tempval1=0;
+                    tempval2=0;
+                    break;
+                }
+            }
+            if (pass==true)
+            {
+                if (btnState)
+                {
+                    //already started state
+                    [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+                    
+                    btnState=false;
+                    [_startBtn setTitle:@"Stop Marking" forState:UIControlStateNormal];
+                }
+                else
+                {
+                    [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
+                    [self popMsg];
+                }
+            }
+            else
+            {
+                UIAlertController *msg=[UIAlertController alertControllerWithTitle:@"Marking Failed" message:@"You have already marked in this timeline" preferredStyle:UIAlertControllerStyleAlert];
+                [self presentViewController:msg animated:YES completion:nil];
+
+                UIAlertAction *ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
+                                                           handler:^(UIAlertAction * action){
+
+                                                               [msg dismissViewControllerAnimated:YES completion:nil];
+                                                               [videoPlayer play];
+
+                                                           }];
+                [msg addAction:ok];
+//                NSLog(@"fail");
+                btnState=true;
+                [_startBtn setTitle:@"Start Marking" forState:UIControlStateNormal];
+                [videoPlayer pause];
+            }
+        }
         else
         {
-            [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
-            [self popMsg];
+            if(btnState &&[timeRange count]==0)
+            {
+                //first time insertion only
+                [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"start"];
+                
+                btnState=false;
+                [_startBtn setTitle:@"Stop Marking" forState:UIControlStateNormal];
+            }
+            else
+            {
+                [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
+                [self popMsg];
+            }
         }
         
-    }
+//}*/
 }
 
 -(void)popMsg
@@ -92,7 +495,7 @@
     UIAlertAction* ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
                                                handler:^(UIAlertAction * action)
                          {
-                             //Do Some action here
+                             
                              purposeStr=alertController.textFields[0].text;
                              [alertController dismissViewControllerAnimated:YES completion:nil];
                              [timeDict setObject:purposeStr forKey:@"purpose"];
@@ -101,52 +504,19 @@
                              timeDict=[[NSMutableDictionary alloc] init];
                              NSLog(@"time range %@",[timeRange description]);
                              btnState=TRUE;
+                             [videoPlayer play];
+
                              [_startBtn setTitle:@"Start Marking" forState:UIControlStateNormal];
                          }];
     
     [alertController addAction:ok];
     [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+    [videoPlayer pause];
         textField.placeholder = @"Enter Marking Name";
     }];
     [self presentViewController:alertController animated:YES completion:nil];
 }
 
--(void)verifyPart
-{
-    BOOL pass = false;
-    for (int i=0; i<[timeRange count]; i++)
-    {
-        NSString *tempstart=[NSString stringWithFormat:@"%@",[[timeRange objectAtIndex:i] objectForKey:@"start"]];
-        int tempval1=[tempstart intValue];
-        NSString *tempstop=[NSString stringWithFormat:@"%@",[[timeRange objectAtIndex:i] objectForKey:@"stop"]];
-        int tempval2=[tempstop intValue];
-        if((currentSecond!=tempval1)||(currentSecond!=tempval2))
-        {
-            if(((currentSecond>tempval1)&&(currentSecond>tempval2)) ||((currentSecond<tempval1) &&(currentSecond<tempval2)))
-            {
-                    NSLog(@"pass");
-                    pass=true;
-            }
-        }
-        else
-        {
-            NSLog(@"fail");
-           
-            pass=false;
-        }
-    }
-    if (pass==true)
-    {
-        [timeDict setObject:[NSString stringWithFormat:@"%d",currentSecond] forKey:@"stop"];
-        [self popMsg];
-    }
-    else
-    {
-        NSLog(@"fail");
-        
-    }
-
-}
 
 
 #pragma mark - marking Table
