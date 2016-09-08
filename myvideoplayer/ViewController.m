@@ -17,6 +17,9 @@
 #define BETWEEN(value, min, max) (value < max && value > min)
 
 @synthesize videoPlayer;
+
+
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -40,7 +43,7 @@
     playerVC.delegate=self;
     [playerVC setPlayer:videoPlayer];
     playerVC.showsPlaybackControls=YES;
-    playerVC.view.frame = CGRectMake(0,0,420,300);
+
     
 //    Float64 startSeconds = 60.0f;
 //    CMTime startTime = CMTimeMakeWithSeconds(startSeconds, NSEC_PER_SEC);
@@ -54,6 +57,52 @@
     [videoPlayer play];
     [self.view addSubview:playerVC.view];
     
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:NO];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification object:nil];
+}
+
+- (void)orientationChanged:(NSNotification *)notification{
+    [self adjustViewsForOrientation:[[UIApplication sharedApplication] statusBarOrientation]];
+}
+
+
+- (void)adjustViewsForOrientation:(UIInterfaceOrientation) orientation {
+    
+    switch (orientation)
+    {
+        case UIInterfaceOrientationPortrait:
+        {
+            playerVC.view.frame = CGRectMake(0, 0, 420,300);
+            
+        }
+            break;
+        case UIInterfaceOrientationPortraitUpsideDown:
+        {
+            //load the portrait view
+            playerVC.view.frame = CGRectMake(0, 0, 420,300);
+            
+        }
+            
+            break;
+        case UIInterfaceOrientationLandscapeLeft:
+        {
+            playerVC.view.frame = CGRectMake(0, 0, 568,300);
+            
+        }
+            break;
+        case UIInterfaceOrientationLandscapeRight:
+        {
+            //load the landscape view
+            playerVC.view.frame = CGRectMake(0, 0, 568,300);
+            
+        }
+            break;
+        case UIInterfaceOrientationUnknown:break;
+    }
 }
 
 -(BOOL)verifyPart :(void(^)(void))completionBlock

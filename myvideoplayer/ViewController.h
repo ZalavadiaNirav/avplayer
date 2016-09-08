@@ -24,8 +24,10 @@
     NSString *purposeStr;
     UIAlertController *alertController;
     BOOL pass,status,isInsert;
+    CALayer *layer;
 }
 
+@property (weak, nonatomic) IBOutlet UIView *videoContainer;
 -(IBAction)StartMarking:(id)sender;
 -(void)popMsg;
 -(BOOL)verifyPart: (void (^)(void))completionBlock;
